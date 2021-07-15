@@ -1,8 +1,13 @@
 package com.yny.mlocr
 
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.text.TextUtils
 import android.util.Log
 import android.util.Size
+import androidx.appcompat.app.AppCompatActivity
+import com.yny.mlocr.camera2.Constants
 import java.util.*
 
 /**
@@ -12,6 +17,36 @@ import java.util.*
  * create on 2021/7/15 15:16
  */
 object Camera2Utils {
+
+    /**
+     * Step1 获取 CameraId
+     */
+    fun chooseCamera(cameraManager: CameraManager): String? {
+        try {
+            for (cameraId in cameraManager.cameraIdList) {
+
+                if (cameraId == null) {
+                    continue
+                }
+
+                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+
+                // 这里不使用前置摄像头
+                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                    continue
+                }
+
+                characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) ?: continue
+
+                return cameraId
+            }
+        } catch (e: CameraAccessException) {
+            Log.e(Constants.TAG, "Not allowed to access camera")
+        }
+
+        return null
+    }
 
     /**
      * The camera preview size will be chosen to be the smallest frame by pixel size capable of

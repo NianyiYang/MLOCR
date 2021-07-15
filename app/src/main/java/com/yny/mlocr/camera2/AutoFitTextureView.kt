@@ -1,4 +1,4 @@
-package com.yny.mlocr
+package com.yny.mlocr.camera2
 
 import android.content.Context
 import android.util.AttributeSet

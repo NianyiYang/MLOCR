@@ -1,4 +1,4 @@
-package com.yny.mlocr.camera
+package com.yny.mlocr.camera2
 
 import android.content.Context
 import android.hardware.Camera
