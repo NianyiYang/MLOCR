@@ -106,7 +106,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun processImage() {
+        // 处理图片
         Log.i(Constants.TAG, "获取到图片帧！")
+        // 标识处理完成，开始处理下一帧
+        readyForNextImage()
+    }
+
+    private fun readyForNextImage() {
+        postInferenceCallback?.run()
     }
 
     private fun hasPermission(): Boolean {
