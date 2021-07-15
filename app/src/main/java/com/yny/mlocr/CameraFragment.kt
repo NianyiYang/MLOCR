@@ -2,10 +2,13 @@ package com.yny.mlocr
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
+import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
+import android.media.ImageReader
+import android.media.ImageReader.OnImageAvailableListener
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -25,6 +28,10 @@ import java.util.concurrent.TimeUnit
  * 2. 获取系统 Camera 服务，打开摄像头（摄像头权限已获取的前提下）
  * 3. 打开摄像头后通过回调获取到 CameraDevice，创建 CameraPreviewSession
  * 4. 创建 Session 成功后，通过 setRepeatingRequest 实时预览
+ *
+ * 实时帧截取
+ * Camera2 - 实质上是创建了一个 reader 去获取预览帧
+ * Camera - 直接通过 Camera.PreviewCallback 回调获取预览帧
  *
  * @author nianyi.yang
  * create on 2021/7/15 17:19
@@ -53,9 +60,15 @@ class CameraFragment : Fragment() {
     private var captureRequestBuilder: CaptureRequest.Builder? = null
     private var captureRequest: CaptureRequest? = null
 
+    // 获取实时帧的 Reader
+    private var previewReader: ImageReader? = null
+
     // 关联异步线程去处理图像
     private var backgroundThread: HandlerThread? = null
     private var backgroundHandler: Handler? = null
+
+    // 获取实时帧的回调
+    private var imageListener: OnImageAvailableListener? = null
 
 //    private val cameraConnectionCallback: MainActivity.ConnectionCallback = object : MainActivity.ConnectionCallback {
 //        override fun onPreviewSizeChosen(size: Size?, cameraRotation: Int?) {
@@ -83,6 +96,10 @@ class CameraFragment : Fragment() {
         super.onPause()
     }
 
+    fun setImageListener(listener: OnImageAvailableListener) {
+        imageListener = listener
+    }
+
     private fun prepare() {
         textureView?.let {
             if (it.isAvailable) {
@@ -94,7 +111,7 @@ class CameraFragment : Fragment() {
                     }
 
                     override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
-//            configureTransform(width, height)
+                        configureTransform(width, height)
                     }
 
                     override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
@@ -136,10 +153,8 @@ class CameraFragment : Fragment() {
             captureSession = null
             cameraDevice?.close()
             cameraDevice = null
-//            if (null != previewReader) {
-//                previewReader.close()
-//                previewReader = null
-//            }
+            previewReader?.close()
+            previewReader = null
         } catch (e: InterruptedException) {
             throw java.lang.RuntimeException("Interrupted while trying to lock camera closing.", e)
         } finally {
@@ -223,23 +238,20 @@ class CameraFragment : Fragment() {
 
     private fun createCameraPreviewSession() {
         try {
-            val texture = textureView?.surfaceTexture
-
             // We configure the size of default buffer to be the size of camera preview we want.
             if (previewSize != null) {
-                texture?.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
-
-                // This is the output Surface we need to start preview.
-                val surface = Surface(texture)
-
                 // We set up a CaptureRequest.Builder with the output Surface.
                 captureRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                captureRequestBuilder?.addTarget(surface)
+                val previewSurface = createPreviewSurface(previewSize!!)
+                captureRequestBuilder?.addTarget(previewSurface)
+                val captureSurface = createCaptureSurface(previewSize!!)
+                captureRequestBuilder?.addTarget(captureSurface)
+
                 Log.i(Constants.TAG, "Opening camera preview: " + previewSize!!.width + "x" + previewSize!!.height)
 
                 // Here, we create a CameraCaptureSession for camera preview.
                 cameraDevice?.createCaptureSession(
-                    listOf(surface),
+                    listOf(previewSurface, captureSurface),
                     object : CameraCaptureSession.StateCallback() {
                         override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
                             // The camera is already closed
@@ -282,6 +294,24 @@ class CameraFragment : Fragment() {
         } catch (e: CameraAccessException) {
             Log.e(Constants.TAG, "CameraAccessException!")
         }
+    }
+
+    private fun createPreviewSurface(previewSize: Size): Surface {
+        val texture = textureView?.surfaceTexture
+        texture?.setDefaultBufferSize(previewSize.width, previewSize.height)
+
+        // This is the output Surface we need to start preview.
+        return Surface(texture)
+    }
+
+    private fun createCaptureSurface(previewSize: Size): Surface {
+
+        // Create the reader for the preview frames.
+        previewReader = ImageReader.newInstance(previewSize.width, previewSize.height, ImageFormat.YUV_420_888, 2)
+        previewReader!!.setOnImageAvailableListener(imageListener, backgroundHandler)
+
+        // This is the output Surface we need to start preview.
+        return previewReader!!.surface
     }
 
     /** Starts a background thread and its [Handler].  */
