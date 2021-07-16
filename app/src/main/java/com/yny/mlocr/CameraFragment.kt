@@ -18,6 +18,7 @@ import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.yny.mlocr.camera2.AutoFitTextureView
+import com.yny.mlocr.camera2.ConnectionCallback
 import com.yny.mlocr.camera2.Constants
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -70,11 +71,7 @@ class CameraFragment : Fragment() {
     // 获取实时帧的回调
     private var imageListener: OnImageAvailableListener? = null
 
-//    private val cameraConnectionCallback: MainActivity.ConnectionCallback = object : MainActivity.ConnectionCallback {
-//        override fun onPreviewSizeChosen(size: Size?, cameraRotation: Int?) {
-//
-//        }
-//    }
+    private var cameraConnectionCallback: ConnectionCallback? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_camera, container, false)
@@ -98,6 +95,10 @@ class CameraFragment : Fragment() {
 
     fun setImageListener(listener: OnImageAvailableListener) {
         imageListener = listener
+    }
+
+    fun setCameraConnectionCallback(callback: ConnectionCallback) {
+        cameraConnectionCallback = callback
     }
 
     private fun prepare() {
@@ -200,7 +201,7 @@ class CameraFragment : Fragment() {
         }
 
         // 预览 size 设置完成回调
-        // cameraConnectionCallback.onPreviewSizeChosen(previewSize, sensorOrientation)
+        cameraConnectionCallback?.onPreviewSizeChosen(previewSize, sensorOrientation)
     }
 
     /**
