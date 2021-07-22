@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.yny.mlocr.camera2.ConnectionCallback
 import com.yny.mlocr.camera2.Constants
 import com.yny.mlocr.camera2.ImageHelper
-import com.yny.mlocr.plite.PredictorManager
+import com.yny.mlocr.paddlelite.PredictorManager
 import java.util.*
 
 /**

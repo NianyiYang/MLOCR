@@ -1,4 +1,4 @@
-package com.yny.mlocr.plite
+package com.yny.mlocr.paddlelite
 
 import android.content.Context
 import android.graphics.Bitmap
