@@ -27,18 +27,18 @@ object PredictorManager {
         )
     }
 
-    fun runModel(): Boolean {
-        return predictor.isLoaded() && predictor.runModel()
-    }
-
     fun onImageChanged(image: Bitmap?): Boolean {
         // Rerun model if users pick test image from gallery or camera
         if (image != null && predictor.isLoaded()) {
             predictor.setInputImage(image)
-            return runModel()
+            return predictor.isLoaded() && predictor.runModel()
         }
 
         return false
+    }
+
+    fun onUnloadModel() {
+        predictor.releaseModel()
     }
 
     @Synchronized

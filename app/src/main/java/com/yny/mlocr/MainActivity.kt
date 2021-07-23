@@ -1,6 +1,7 @@
 package com.yny.mlocr
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.Image
@@ -10,12 +11,14 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.util.Size
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.yny.mlocr.camera2.ConnectionCallback
 import com.yny.mlocr.camera2.Constants
 import com.yny.mlocr.camera2.ImageHelper
+import com.yny.mlocr.opengl.SimpleRenderActivity
 import com.yny.mlocr.paddlelite.PredictorManager
 import java.util.*
 
@@ -52,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         if (hasPermission()) {
-            openFragment()
+//            openFragment()
         } else {
             requestPermission()
         }
@@ -81,6 +84,11 @@ class MainActivity : AppCompatActivity() {
             Log.e(Constants.TAG, "InterruptedException")
         }
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        PredictorManager.onUnloadModel()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String?>, grantResults: IntArray) {
@@ -223,5 +231,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return true
+    }
+
+    fun onSimpleRender(view: View) {
+        startActivity(Intent(this, SimpleRenderActivity::class.java))
     }
 }
